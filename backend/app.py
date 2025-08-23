@@ -10,6 +10,7 @@ from crew import kickoff_everyone, SP500InvestmentTickAgentCrew
 
 # List of 100 potential stock trading strategies
 TRADING_STRATEGIES = [
+    "Go all in on Apple. Buy as many Apple stocks as possible.",
     "Focus on tech companies, buy and hold.",
     "Invest 80% in health companies, with 20% in sustainability companies. Be aggressive",
     "Dollar-cost average into S&P 500 index funds monthly",
@@ -38,7 +39,6 @@ TRADING_STRATEGIES = [
     "Biotech breakthrough stock hunting",
     "Energy sector contrarian investing",
     "Consumer staples during recessions",
-    "Technology disruption stock identification",
     "Merger and acquisition arbitrage",
     "Short selling overvalued stocks",
     "Long-short market neutral strategy",
@@ -172,8 +172,8 @@ if __name__ == "__main__":
         crew = crew_factory.crew()
         create_agent(strategy, crew)
     
-    # Get all agents and pass them to kickoff_everyone
-    all_agents = list(AGENTS_STORE.values())
-    kickoff_everyone(all_agents)
+    # # Get all agents and pass them to kickoff_everyone
+    # all_agents = list(AGENTS_STORE.values())
+    # kickoff_everyone(all_agents)
     
     uvicorn.run(app, host="0.0.0.0", port=8000)

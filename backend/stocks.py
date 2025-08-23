@@ -1,7 +1,16 @@
 import pandas as pd
-from typing import List, Dict, Tuple
+from typing import List, Dict, Callable
 import threading
 import time
+import asyncio
+
+# Remove the circular import - we'll set this function reference later
+kickoff_everyone_callback: Callable = None
+
+def set_kickoff_callback(callback: Callable):
+    """Set the callback function to be called on tick intervals"""
+    global kickoff_everyone_callback
+    kickoff_everyone_callback = callback
 
 def read_stocks_data() -> List[Dict[str, float]]:
     """
@@ -55,6 +64,10 @@ def tick_incrementer():
     while True:
         time.sleep(10)
         CURRENT_TICK += 1
+        if CURRENT_TICK % 6 == 1 and kickoff_everyone_callback:
+            # Import here to avoid circular import
+            from agents_store import AGENTS_STORE
+            asyncio.run(kickoff_everyone_callback(list(AGENTS_STORE.values())))
         print(f"Tick: {CURRENT_TICK}")
 
 _tick_thread = threading.Thread(target=tick_incrementer, daemon=True)

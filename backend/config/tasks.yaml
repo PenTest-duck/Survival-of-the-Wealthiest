@@ -1,7 +1,7 @@
 ---
 make_investment_decision:
-  description: Based on the {investment_strategy}, current {wallet_money}, and {portfolio_data}
-    (list of tuples containing company name, shares owned, and current price per share),
+  description: Based on the investment strategy of "{investment_strategy}", current {wallet_money}, and {portfolio_data}
+    (list of dictionaries containing company name, shares owned, and current price per share),
     decide what stocks to buy or sell for this tick. Analyze each holding's current
     market value and apply the investment strategy to determine optimal buy/sell decisions.
     Calculate transaction costs and ensure decisions align with available cash and
@@ -11,7 +11,7 @@ make_investment_decision:
     Pure JSON response only (no additional text or formatting) with the investment decision results:
     {
       "new_wallet_money": [updated cash amount after transactions],
-      "new_portfolio_data": [updated list of portfolio holdings as tuples in format [("AAPL", shares_owned, current_price_per_share), ("MSFT", shares_owned, current_price_per_share)]],
+      "new_portfolio_data": [updated list of portfolio holdings as dictionaries in format [{"symbol": "AAPL", "shares": shares_owned, "price": current_price_per_share}, {"symbol": "MSFT", "shares": shares_owned, "price": current_price_per_share}]],
       "timestamp": "[current timestamp for this tick in ISO format]",
       "actions_taken": "[description of buy/sell actions performed]",
       "reasoning": "[brief explanation of decision based on strategy and current portfolio analysis]"
