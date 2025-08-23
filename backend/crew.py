@@ -4,11 +4,12 @@ from crewai import LLM
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 import json
-
+import asyncio
 from stocks import get_portfolio_data
 
 # Import the Agent model type for type hints
 from agents_store import Agent as AgentModel
+from agents_store import AGENTS_STORE
 
 @CrewBase
 class SP500InvestmentTickAgentCrew:
@@ -46,26 +47,31 @@ class SP500InvestmentTickAgentCrew:
             verbose=True,
         )
 
-def kickoff(crew: Crew, input: Dict[str, Any]) -> Dict[str, Any]:
-    output = crew.kickoff(inputs=input)
+async def kickoff(agent_id: str, input: Dict[str, Any]) -> None:
+    agent = AGENTS_STORE[agent_id]
+    output = await agent.crew.kickoff_async(inputs=input)
     raw = output.raw
 
     try:
         data = json.loads(raw)
-        return data
     except json.JSONDecodeError as e:
         raise ValueError(f"Failed to decode JSON: {e}")
+    
+    agent.portfolio = data["new_portfolio_data"]
 
-def kickoff_everyone(agents: List[AgentModel]) -> None:
-    """Kickoff all alive agents with their respective crews"""
+async def kickoff_everyone(agents: List[AgentModel]) -> None:
+    """Kickoff all alive agents with their respective crews in parallel (non-blocking)"""
     for agent in agents:
         if not agent.alive:
             continue
-        kickoff(agent.crew, {
-            "investment_strategy": agent.strategy,
-            "wallet_money": agent.bank,
-            "portfolio_data": get_portfolio_data(agent.portfolio),
-        })
+        asyncio.create_task(
+            kickoff(agent.id, {
+                "investment_strategy": agent.strategy,
+                "wallet_money": agent.bank,
+                "portfolio_data": get_portfolio_data(agent.portfolio),
+            })
+        )
+    # Function returns immediately, does not block on tasks
 
 if __name__ == "__main__":
     crew = SP500InvestmentTickAgentCrew().crew()

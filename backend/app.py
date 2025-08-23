@@ -152,8 +152,8 @@ app.add_middleware(
 @app.get("/agents")
 async def get_agents():
     all_agents = list(AGENTS_STORE.values())
-    filtered_agents = [agent for agent in all_agents if agent.alive]
-    sorted_agents = sorted(filtered_agents, key=lambda agent: agent.id)
+    # filtered_agents = [agent for agent in all_agents if agent.alive]
+    sorted_agents = sorted(all_agents, key=lambda agent: agent.id)
     return [{
         "id": agent.id,
         "alive": agent.alive,

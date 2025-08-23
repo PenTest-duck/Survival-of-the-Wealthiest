@@ -52,11 +52,10 @@ export default function Home() {
     return Object.values(portfolio).reduce((sum, value) => sum + value, 0);
   };
 
-  // Calculate total P&L (bank + portfolio - assuming initial bank was 10000)
+  // Calculate total P&L (current bank - initial bank of 10000)
   const getTotalPnL = (agent: Agent) => {
-    const initialBank = 10000; // Assuming initial bank amount
-    const totalPortfolio = getTotalPortfolioValue(agent.portfolio);
-    return (agent.bank + totalPortfolio) - initialBank;
+    const initialBank = 10000; // Initial bank amount
+    return agent.bank - initialBank;
   };
 
   // Get total P&L across all agents
@@ -111,7 +110,7 @@ export default function Home() {
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-green-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">
-            AI AGENT BATTLE ROYALE
+            EVOLUTIONARY INVESTMENT
           </h1>
           <p className="text-xl text-green-300 mb-8 max-w-3xl mx-auto">
             {agents.length} specialized AI agents constantly monitoring and analyzing investment opportunities. 
@@ -162,7 +161,6 @@ export default function Home() {
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h2 className="text-3xl font-bold text-green-400 mb-2">{selectedAgent.name}</h2>
-                  <p className="text-xl text-green-300">{selectedAgent.strategy}</p>
                 </div>
                 <button
                   onClick={() => setSelectedAgent(null)}
@@ -172,35 +170,44 @@ export default function Home() {
                 </button>
               </div>
               
-              <div className="grid grid-cols-2 gap-6 mb-6">
+              {/* Key Agent Details */}
+              <div className="space-y-4 mb-6">
+                {/* Status */}
                 <div className="bg-black/50 border border-green-500/30 rounded-lg p-4">
                   <div className="text-green-300 text-sm mb-1">Status</div>
-                  <div className={`text-lg font-bold ${
+                  <div className={`text-xl font-bold ${
                     selectedAgent.alive ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {selectedAgent.alive ? 'ALIVE' : 'ELIMINATED'}
+                    {selectedAgent.alive ? 'ALIVE' : 'DEAD'}
                   </div>
                 </div>
+                
+                {/* Strategy */}
                 <div className="bg-black/50 border border-green-500/30 rounded-lg p-4">
-                  <div className="text-green-300 text-sm mb-1">Bank Balance</div>
-                  <div className="text-lg font-bold text-green-400">
+                  <div className="text-green-300 text-sm mb-1">Strategy</div>
+                  <div className="text-lg text-green-400">
+                    {selectedAgent.strategy}
+                  </div>
+                </div>
+                
+                {/* Bank Amount */}
+                <div className="bg-black/50 border border-green-500/30 rounded-lg p-4">
+                  <div className="text-green-300 text-sm mb-1">Bank Amount</div>
+                  <div className="text-xl font-bold text-green-400">
                     ${selectedAgent.bank.toFixed(2)}
                   </div>
                 </div>
+                
+                {/* Current Portfolio */}
                 <div className="bg-black/50 border border-green-500/30 rounded-lg p-4">
-                  <div className="text-green-300 text-sm mb-1">Portfolio Value</div>
-                  <div className="text-lg font-bold text-green-400">
+                  <div className="text-green-300 text-sm mb-1">Current Portfolio Value</div>
+                  <div className="text-xl font-bold text-green-400">
                     ${getTotalPortfolioValue(selectedAgent.portfolio).toFixed(2)}
-                  </div>
-                </div>
-                <div className="bg-black/50 border border-green-500/30 rounded-lg p-4">
-                  <div className="text-green-300 text-sm mb-1">Total P&L</div>
-                  <div className={`text-lg font-bold ${getTotalPnL(selectedAgent) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    ${getTotalPnL(selectedAgent).toFixed(2)}
                   </div>
                 </div>
               </div>
 
+              {/* Portfolio Holdings */}
               <div className="bg-black/50 border border-green-500/30 rounded-lg p-4">
                 <div className="text-green-300 text-sm mb-2">Portfolio Holdings</div>
                 <div className="space-y-2 text-sm">

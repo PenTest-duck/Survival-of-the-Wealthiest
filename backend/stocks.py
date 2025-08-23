@@ -55,6 +55,7 @@ def tick_incrementer():
     while True:
         time.sleep(10)
         CURRENT_TICK += 1
+        print(f"Tick: {CURRENT_TICK}")
 
 _tick_thread = threading.Thread(target=tick_incrementer, daemon=True)
 _tick_thread.start()
