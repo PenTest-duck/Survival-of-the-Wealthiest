@@ -1,0 +1,19 @@
+---
+make_investment_decision:
+  description: Based on the {investment_strategy}, current {wallet_money}, and {portfolio_data}
+    (list of tuples containing company name, shares owned, and current price per share),
+    decide what stocks to buy or sell for this tick. Analyze each holding's current
+    market value and apply the investment strategy to determine optimal buy/sell decisions.
+    Calculate transaction costs and ensure decisions align with available cash and
+    strategy requirements. Execute the strategy for one time tick and return the updated
+    portfolio state.
+  expected_output: |-
+    Pure JSON response only (no additional text or formatting) with the investment decision results:
+    {
+      "new_wallet_money": [updated cash amount after transactions],
+      "new_portfolio_data": [updated list of portfolio holdings as tuples in format [("AAPL", shares_owned, current_price_per_share), ("MSFT", shares_owned, current_price_per_share)]],
+      "timestamp": "[current timestamp for this tick in ISO format]",
+      "actions_taken": "[description of buy/sell actions performed]",
+      "reasoning": "[brief explanation of decision based on strategy and current portfolio analysis]"
+    }
+  agent: s_p_500_investment_decision_maker

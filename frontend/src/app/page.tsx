@@ -1,74 +1,72 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import AgentCard from '../components/AgentCard';
+import { getAgents } from '../api/client';
 
 interface Agent {
-  id: number;
+  id: string;
+  alive: boolean;
   name: string;
-  industry: string;
-  status: 'active' | 'analyzing' | 'alert';
-  profitLoss: number;
-  lastUpdate: string;
-  performance: number;
+  strategy: string;
+  bank: number;
+  portfolio: Record<string, number>;
 }
-
-const industries = [
-  'Military & Defense', 'Artificial Intelligence', 'Cybersecurity', 'Biotechnology',
-  'Renewable Energy', 'Space Technology', 'Quantum Computing', 'Blockchain',
-  'Autonomous Vehicles', 'Robotics', 'Nanotechnology', 'Clean Energy',
-  'Digital Health', 'Fintech', 'E-commerce', 'Cloud Computing',
-  'Semiconductors', 'Telecommunications', 'Entertainment', 'Real Estate'
-];
-
-const generateAgents = (): Agent[] => {
-  return Array.from({ length: 100 }, (_, i) => ({
-    id: i + 1,
-    name: `Agent-${String(i + 1).padStart(3, '0')}`,
-    industry: industries[i % industries.length],
-    status: ['active', 'analyzing', 'alert'][Math.floor(Math.random() * 3)] as 'active' | 'analyzing' | 'alert',
-    profitLoss: (Math.random() - 0.5) * 10000,
-    lastUpdate: new Date(Date.now() - Math.random() * 60000).toLocaleTimeString(),
-    performance: Math.random() * 100
-  }));
-};
 
 export default function Home() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [isScanning, setIsScanning] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [hasInitialLoad, setHasInitialLoad] = useState(false);
 
   useEffect(() => {
-    setAgents(generateAgents());
+    const fetchAgents = async () => {
+      try {
+        // Only set loading to true on initial load
+        if (!hasInitialLoad) {
+          setLoading(true);
+        }
+        const agentsData = await getAgents();
+        setAgents(agentsData);
+        setIsScanning(false);
+        setHasInitialLoad(true);
+      } catch (error) {
+        console.error('Failed to fetch agents:', error);
+        setIsScanning(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAgents();
     
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      setAgents(prev => prev.map(agent => ({
-        ...agent,
-        profitLoss: agent.profitLoss + (Math.random() - 0.5) * 100,
-        lastUpdate: new Date().toLocaleTimeString(),
-        performance: Math.max(0, Math.min(100, agent.performance + (Math.random() - 0.5) * 2))
-      })));
-    }, 2000);
+    // Set up polling to refresh agents data every 5 seconds
+    const interval = setInterval(fetchAgents, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [hasInitialLoad]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'text-green-400';
-      case 'analyzing': return 'text-yellow-400';
-      case 'alert': return 'text-red-400';
-      default: return 'text-gray-400';
-    }
+  // Calculate total portfolio value for each agent
+  const getTotalPortfolioValue = (portfolio: Record<string, number>) => {
+    return Object.values(portfolio).reduce((sum, value) => sum + value, 0);
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active': return '●';
-      case 'analyzing': return '◐';
-      case 'alert': return '⚠';
-      default: return '○';
-    }
+  // Calculate total P&L (bank + portfolio - assuming initial bank was 10000)
+  const getTotalPnL = (agent: Agent) => {
+    const initialBank = 10000; // Assuming initial bank amount
+    const totalPortfolio = getTotalPortfolioValue(agent.portfolio);
+    return (agent.bank + totalPortfolio) - initialBank;
+  };
+
+  // Get total P&L across all agents
+  const getTotalSystemPnL = () => {
+    return agents.reduce((sum, agent) => sum + getTotalPnL(agent), 0);
+  };
+
+  // Get alive agents count
+  const getAliveAgentsCount = () => {
+    return agents.filter(agent => agent.alive).length;
   };
 
   return (
@@ -94,13 +92,13 @@ export default function Home() {
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-sm">
-                <span className="text-green-300">Active Agents:</span>
-                <span className="ml-2 text-green-400 font-bold">{agents.filter(a => a.status === 'active').length}</span>
+                <span className="text-green-300">Alive Agents:</span>
+                <span className="ml-2 text-green-400 font-bold">{getAliveAgentsCount()}</span>
               </div>
               <div className="text-sm">
                 <span className="text-green-300">Total P&L:</span>
-                <span className={`ml-2 font-bold ${agents.reduce((sum, a) => sum + a.profitLoss, 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  ${agents.reduce((sum, a) => sum + a.profitLoss, 0).toFixed(2)}
+                <span className={`ml-2 font-bold ${getTotalSystemPnL() >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  ${getTotalSystemPnL().toFixed(2)}
                 </span>
               </div>
             </div>
@@ -116,7 +114,7 @@ export default function Home() {
             AI AGENT BATTLE ROYALE
           </h1>
           <p className="text-xl text-green-300 mb-8 max-w-3xl mx-auto">
-            100 specialized AI agents constantly monitoring and analyzing investment opportunities across 20 critical industries. 
+            {agents.length} specialized AI agents constantly monitoring and analyzing investment opportunities. 
             Only the most profitable strategies survive.
           </p>
           <div className="flex justify-center space-x-8 text-sm">
@@ -125,8 +123,8 @@ export default function Home() {
               <div className="text-green-300">Total Agents</div>
             </div>
             <div className="bg-black/50 border border-green-500/30 rounded-lg px-6 py-3">
-              <div className="text-green-400 font-bold">{industries.length}</div>
-              <div className="text-green-300">Industries</div>
+              <div className="text-green-400 font-bold">{getAliveAgentsCount()}</div>
+              <div className="text-green-300">Alive Agents</div>
             </div>
             <div className="bg-black/50 border border-green-500/30 rounded-lg px-6 py-3">
               <div className="text-green-400 font-bold">24/7</div>
@@ -135,41 +133,27 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <div className="text-green-400 text-xl mb-4">Loading agents...</div>
+            <div className="w-8 h-8 border-2 border-green-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          </div>
+        )}
+
         {/* Agent Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
-          {agents.map((agent) => (
-            <div
-              key={agent.id}
-              onClick={() => setSelectedAgent(agent)}
-              className={`bg-black/60 border border-green-500/30 rounded-lg p-4 cursor-pointer transition-all duration-300 hover:border-green-400 hover:bg-black/80 hover:scale-105 ${
-                selectedAgent?.id === agent.id ? 'border-green-400 bg-black/80 ring-2 ring-green-400/50' : ''
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-lg font-bold text-green-400">{agent.name}</div>
-                <div className={`text-lg ${getStatusColor(agent.status)}`}>
-                  {getStatusIcon(agent.status)}
-                </div>
-              </div>
-              <div className="text-sm text-green-300 mb-2">{agent.industry}</div>
-              <div className="flex justify-between items-center text-sm">
-                <div>
-                  <span className="text-green-300">P&L:</span>
-                  <span className={`ml-1 font-bold ${agent.profitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    ${agent.profitLoss.toFixed(2)}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-green-300">Perf:</span>
-                  <span className="ml-1 font-bold text-green-400">{agent.performance.toFixed(1)}%</span>
-                </div>
-              </div>
-              <div className="text-xs text-green-400/60 mt-2">
-                Last: {agent.lastUpdate}
-              </div>
-            </div>
-          ))}
-        </div>
+        {!loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+            {agents.map((agent) => (
+              <AgentCard
+                key={agent.id}
+                agent={agent}
+                isSelected={selectedAgent?.id === agent.id}
+                onClick={setSelectedAgent}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Agent Details Modal */}
         {selectedAgent && (
@@ -178,7 +162,7 @@ export default function Home() {
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h2 className="text-3xl font-bold text-green-400 mb-2">{selectedAgent.name}</h2>
-                  <p className="text-xl text-green-300">{selectedAgent.industry}</p>
+                  <p className="text-xl text-green-300">{selectedAgent.strategy}</p>
                 </div>
                 <button
                   onClick={() => setSelectedAgent(null)}
@@ -191,45 +175,44 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-6 mb-6">
                 <div className="bg-black/50 border border-green-500/30 rounded-lg p-4">
                   <div className="text-green-300 text-sm mb-1">Status</div>
-                  <div className={`text-lg font-bold ${getStatusColor(selectedAgent.status)}`}>
-                    {selectedAgent.status.toUpperCase()}
+                  <div className={`text-lg font-bold ${
+                    selectedAgent.alive ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {selectedAgent.alive ? 'ALIVE' : 'ELIMINATED'}
                   </div>
                 </div>
                 <div className="bg-black/50 border border-green-500/30 rounded-lg p-4">
-                  <div className="text-green-300 text-sm mb-1">Performance</div>
+                  <div className="text-green-300 text-sm mb-1">Bank Balance</div>
                   <div className="text-lg font-bold text-green-400">
-                    {selectedAgent.performance.toFixed(1)}%
+                    ${selectedAgent.bank.toFixed(2)}
                   </div>
                 </div>
                 <div className="bg-black/50 border border-green-500/30 rounded-lg p-4">
-                  <div className="text-green-300 text-sm mb-1">Profit/Loss</div>
-                  <div className={`text-lg font-bold ${selectedAgent.profitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    ${selectedAgent.profitLoss.toFixed(2)}
-                  </div>
-                </div>
-                <div className="bg-black/50 border border-green-500/30 rounded-lg p-4">
-                  <div className="text-green-300 text-sm mb-1">Last Update</div>
+                  <div className="text-green-300 text-sm mb-1">Portfolio Value</div>
                   <div className="text-lg font-bold text-green-400">
-                    {selectedAgent.lastUpdate}
+                    ${getTotalPortfolioValue(selectedAgent.portfolio).toFixed(2)}
+                  </div>
+                </div>
+                <div className="bg-black/50 border border-green-500/30 rounded-lg p-4">
+                  <div className="text-green-300 text-sm mb-1">Total P&L</div>
+                  <div className={`text-lg font-bold ${getTotalPnL(selectedAgent) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    ${getTotalPnL(selectedAgent).toFixed(2)}
                   </div>
                 </div>
               </div>
 
               <div className="bg-black/50 border border-green-500/30 rounded-lg p-4">
-                <div className="text-green-300 text-sm mb-2">Recent Activity</div>
+                <div className="text-green-300 text-sm mb-2">Portfolio Holdings</div>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-green-400">Market Analysis</span>
-                    <span className="text-green-300">Active</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-green-400">Risk Assessment</span>
-                    <span className="text-green-300">Complete</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-green-400">Portfolio Optimization</span>
-                    <span className="text-green-300">In Progress</span>
-                  </div>
+                  {Object.entries(selectedAgent.portfolio).map(([stock, shares]) => (
+                    <div key={stock} className="flex justify-between">
+                      <span className="text-green-400">{stock}</span>
+                      <span className="text-green-300">{shares} shares</span>
+                    </div>
+                  ))}
+                  {Object.keys(selectedAgent.portfolio).length === 0 && (
+                    <div className="text-green-300 text-center py-2">No holdings</div>
+                  )}
                 </div>
               </div>
             </div>
